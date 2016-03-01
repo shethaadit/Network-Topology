@@ -1,0 +1,308 @@
+import java.util.*;
+
+//Graph Class
+class Graph 
+{
+	//Mappings of Vertex names with objects
+    private Map<String, Vertex> graph; 
+
+    //Edge of graph
+    public static class GraphEdge {
+
+        public String v1, v2;
+        public int dist;
+
+        public GraphEdge(String v1, String v2, int dist) {
+            this.v1 = v1;
+            this.v2 = v2;
+            this.dist = dist;
+        }
+    }
+
+    //Vertex of Graph
+    public static class Vertex implements Comparable<Vertex> 
+    {
+
+        public String name;
+        public int dist = Integer.MAX_VALUE; // MAX_VALUE assumed to be infinity
+        public Vertex previous = null;
+        public Map<Vertex, Integer> graphNeighbours = new HashMap<>();
+        
+        //ArrayList to store shortest path between all pairs of vertices
+        public static ArrayList<ArrayList<Integer>> pList = new ArrayList<ArrayList<Integer>>();
+        
+        static ArrayList<Integer> tList = new ArrayList<>();
+
+        public Vertex(String name)
+        {
+            this.name = name;
+        }
+
+        private void print_Path() 
+        {
+            if (this == this.previous) 
+            {
+                tList.add(Integer.parseInt(this.name));
+            }
+            else if (this.previous == null)
+            {
+                tList.clear();
+            } 
+            else 
+            {
+                this.previous.print_Path();
+                tList.add(Integer.parseInt(this.name));
+            }
+        }
+
+        public int compareTo(Vertex other) {
+            return Integer.compare(dist, other.dist);
+        }
+    }
+
+    
+    public Graph(GraphEdge[] edges)
+    {
+        graph = new HashMap<>(edges.length);
+        
+        //Loop to find all vertices
+        for (GraphEdge e : edges) 
+        {
+            if (!graph.containsKey(e.v1)) 
+            {
+                graph.put(e.v1, new Vertex(e.v1));
+            }
+            if (!graph.containsKey(e.v2))
+            {
+                graph.put(e.v2, new Vertex(e.v2));
+            }
+        }
+        
+        //Loop to store neighbouring vertices
+        for (GraphEdge e : edges) 
+        {
+            graph.get(e.v1).graphNeighbours.put(graph.get(e.v2), e.dist);
+        }
+    }
+
+    //Djkstra's Algorithm
+    public void dijkstra_Shortest_Path(String startName)
+    {
+        if (!graph.containsKey(startName)) 
+        {
+            System.err.printf("Graph is not having start vertex \"%s\"\n", startName);
+            return;
+        }
+        
+        Vertex graphSource = graph.get(startName);
+        
+        NavigableSet<Vertex> q = new TreeSet<>();
+        
+        
+        for (Vertex v : graph.values()) {
+            v.previous = v == graphSource ? graphSource : null;
+            v.dist = v == graphSource ? 0 : Integer.MAX_VALUE;
+            q.add(v);
+        }
+        dijkstra(q);
+    }
+
+    // Djkstra's Algorithm using Binary Heap
+    private void dijkstra(NavigableSet<Vertex> q)
+    {
+        Vertex u, v;
+        while (!q.isEmpty()) 
+        {
+            u = q.pollFirst(); 
+            if (u.dist == Integer.MAX_VALUE) 
+            {
+                break; 
+
+            }
+            //look at distances to each neighbour
+            for (Map.Entry<Vertex, Integer> a : u.graphNeighbours.entrySet()) {
+                v = a.getKey(); //the neighbour in this iteration
+                int alternateDist = u.dist + a.getValue();
+                if (alternateDist < v.dist) { // shorter path to neighbour found
+                    q.remove(v);
+                    v.dist = alternateDist;
+                    v.previous = u;
+                    q.add(v);
+                }
+            }
+        }
+    }
+    
+    // To Print Path from Source to Destination
+    
+    public void printPath(String endName)
+    {
+        if (!graph.containsKey(endName)) 
+        {
+            System.err.printf("Graph is not having end vertex \"%s\"\n", endName);
+            return;
+        }
+        graph.get(endName).print_Path();
+    }
+    
+    
+    public void printAllPaths()
+    {
+        for (Vertex V : graph.values()) 
+        {
+            dijkstra_Shortest_Path(V.name);
+            for (Vertex v : graph.values()) 
+            {
+                Vertex.tList = new ArrayList<>();
+                v.print_Path();
+                Vertex.pList.add(Vertex.tList);
+                Vertex.tList = new ArrayList<>();
+                
+            }
+        }
+    }
+    
+    public static ArrayList<ArrayList<Integer>> getPathlist() {
+        return Vertex.pList;
+    }
+}
+
+
+public class Project1_ATN {
+    private static Graph.GraphEdge GRAPH[] = new Graph.GraphEdge[25 * 25];
+
+    //Main Function
+    public static void main(String[] args) {
+        
+    	//Number of nodes 25
+        int N = 25;
+        int k = 0;
+        int count_GRAPH = 0;
+        
+        Graph g;
+        
+        //Loop to generate bij randomly
+        for (k = 3; k <= 15; k++)
+        {
+            
+            int[][] bij = new int[N][N];
+            Random random_bij = new Random();
+            for (int i = 0; i < N; i++) 
+            {
+                for (int j = 0; j < N; j++) 
+                {
+                    //random selection for bij from 0 to 4
+                    bij[i][j] = random_bij.nextInt(5);
+                }
+            }
+
+            //generating aij randomly
+            int[][] aij = new int[N][N];
+            Random random_aij = new Random();
+            for (int i = 0; i < N; i++) {
+                List<Integer> list_k_randomIndices = new LinkedList<>();
+                int c_k = 0;
+                for (; c_k < k;) 
+                {
+                    int chk = random_aij.nextInt(N);
+                    if (!list_k_randomIndices.contains(chk) && chk != i) 
+                    {
+                        list_k_randomIndices.add(chk);
+                        c_k++;
+                    }
+                }
+                
+                for (int j = 0; j < N; j++)
+                {
+                    if (list_k_randomIndices.contains(j)) {
+                        aij[i][j] = 1;
+                    } else {
+                        aij[i][j] = 200;
+                    }
+                    
+                    GRAPH[count_GRAPH++] = new Graph.GraphEdge(i + "", j + "", aij[i][j]);
+                }
+            }
+            
+            g = new Graph(GRAPH);
+            
+            g.printAllPaths();
+            
+            ArrayList<ArrayList<Integer>> paList = Graph.getPathlist();
+
+            //zij matrix
+            int[][] zij = new int[N][N];
+            int zi = 0, zj = 0;
+            for (zi = 0; zi < N; zi++) {
+                for (zj = 0; zj < N; zj++) {
+                    for (ArrayList<Integer> pathlist1 : paList)
+                    {
+                        if (pathlist1.contains(zi) && pathlist1.contains(zj) && (pathlist1.indexOf(zi) + 1 == pathlist1.indexOf(zj))) 
+                        {
+                            int bk = pathlist1.get(1);
+                            int bl = pathlist1.get(pathlist1.size() - 1);
+                            zij[zi][zj] += bij[bk][bl];
+                        }
+                    }
+                }
+            }
+
+            //To find optimal cost
+            int zopt = 0;
+            for (int zoptk = 0; zoptk < N; zoptk++) 
+            {
+                for (int zoptl = 0; zoptl < N; zoptl++)
+                {
+                    int sum_aij = 0;
+                    
+                    ArrayList<Integer> path_kl = new ArrayList<>();
+                    for (ArrayList<Integer> pathlist1 : paList) {
+                        if (pathlist1.contains(zoptk) && pathlist1.contains(zoptl) && zoptk == (pathlist1.get(0)) && zoptl == (pathlist1.get(pathlist1.size() - 1))) {
+                            path_kl = pathlist1;
+                        }
+                    }
+
+                    //cost sum from start to end
+                    for (int count = 0; count < path_kl.size() - 2; count++)
+                    {
+                        int start = (path_kl.get(count));
+                        int end = (path_kl.get(count + 1));
+                        sum_aij += aij[start][end];
+                    }
+                    zopt += bij[zoptk][zoptl] * sum_aij;
+                }
+            }
+
+            
+            int edge_c = 0;
+            
+            //To print optimal j
+            for (int i = 0; i < N; i++) 
+            {
+                for (int x = 0; x < N; x++)
+                {
+                    if (zij[i][x] != 0) {
+                        System.out.print("Zij[" + i + "][" + x + "]:");
+                        System.out.println((zij[i][x]) + ", ");
+                    	//System.out.print(i + "->" + x);
+                        //System.out.println(" [label=\"" +(zij[i][x]) + "\"]; ");
+                        edge_c++;
+                    }
+                }
+            }
+            System.out.println();
+            System.out.println("k:" + k);
+            System.out.println("Density: " + ((float) edge_c / (N * (N - 1))));
+            System.out.println("Optimal Z: " + zopt);
+            System.out.println("Number of non-zero edges: " + edge_c);
+            System.out.println();
+
+            
+            count_GRAPH = 0;
+        }
+        
+    }
+}
+
+
+
